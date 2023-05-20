@@ -1,12 +1,4 @@
-import math
 import random
-
-def generate_prime(bits):
-    """Генерация случайного простого числа с заданной битовой длиной"""
-    while True:
-        num = random.getrandbits(bits) | (1 << bits-1) | 1  # Генерируем нечетное число
-        if is_prime(num):
-            return num
 
 def is_prime(n, k=10):
     """Проверка, является ли число простым"""
@@ -34,41 +26,37 @@ def is_prime(n, k=10):
             return False
     return True
 
-def jacobi_symbol(a, n):
-    """Вычисление символа Якоби"""
-    if n <= 0 or n % 2 == 0:
-        raise ValueError("n должно быть нечетным положительным числом.")
-    a = a % n
-    t = 1
-    while a != 0:
-        while a % 2 == 0:
-            a //= 2
-            if n % 8 in (3, 5):
-                t = -t
-        a, n = n, a
-        if a % 4 == 3 and n % 4 == 3:
-            t = -t
-        a %= n
-    if n == 1:
-        return t
-    else:
-        return 0
+def generate_blum_sequence(L):
+    """Генерация псевдослучайной последовательности по методу Блюма"""
+    p = 0
+    q = 0
 
-def generate_bbs(bits):
-    """Генерация последовательности псевдослучайных чисел методом BBS"""
-    p = generate_prime(bits)
-    q = generate_prime(bits)
-    n = p * q
-    seed = random.randint(1, n - 1)
-    sequence = ""
-    for _ in range(bits):
-        seed = pow(seed, 2, n)
-        bit = seed % 2
-        sequence += str(bit)
-    return sequence
+    # Находим простые числа p и q
+    while not (is_prime(p) and is_prime(q)):
+        u = random.randint(1, 1e6)
+        v = random.randint(1, 1e6)
+        p = 4 * u + 3
+        q = 4 * v + 3
+
+    n = p * q  # Число Блюма
+
+    s = random.randint(2, n - 1)
+    while s % n == 0:  # Убеждаемся, что s взаимнопростое с n
+        s = random.randint(2, n - 1)
+
+    x_0 = pow(s, 2, n)  # Начальное значение генератора
+
+    blum_sequence = ""
+    for _ in range(L):
+        x_i = pow(x_0, 2, n)  # Вычисляем следующее значение x_i
+        bit = x_i % 2  # Бит последовательности
+        blum_sequence += str(bit)
+        x_0 = x_i
+
+    return blum_sequence
 
 # Пример использования
-bits = 64
-random_sequence = generate_bbs(bits)
-print("В двоичной системе счисления: \n", random_sequence)
-print("В десятичной системе счисления: \n", int(random_sequence, 2))
+L = 8  # Длина псевдослучайной последовательности
+sequence = generate_blum_sequence(L)
+print(sequence)
+print(int(sequence, 2))
